@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>Διαχείριση XML συλλογής με χρήση JS AJAX</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; background-color: #F7C6DA; }
+        table { width: 95%; border-collapse: collapse; border: 3px solid black; margin: 20px auto; background-color: white; }
+        th, td { border: 1px solid black; padding: 10px; text-align: left; }
+        th { background-color: #2c3e50; color: #ffffff; }
+        .button { padding: 10px 15px; margin: 5px; cursor: pointer; background-color: #4CAF50; color: white; border: none; border-radius: 4px; }
+        .button:hover { background-color: #45a049; }
+    </style>
+</head>
+
+<body>
+    <h2>Πανεπιστήμιο Αιγαίου</h2>
+    <h3>Τμήμα Πολιτισμικής Τεχνολογίας και Επικοινωνίας</h3>
+    <h4>Μάθημα: Προγραμματισμός στο Παγκόσμιο Ιστό</h4>
+    <h4>Εργασία Προόδου: Διαχείριση XML συλλογής με χρήση JS AJAX</h4>
+    <h4>Ονοματεπώνυμο Φοιτήτριας: Ευστρατία Χρυσού / ct23818</h4>
+	<h4>Καθηγητής:Κων/νος Κώτης
+    <hr>
+    <h1>ΜΟΥΣΕΙΟ ΚΥΚΛΑΔΙΚΗΣ ΤΕΧΝΗΣ</h1>
+	<h3><em> Το μουσείο Κυκλαδικής Τέχνης στεγάζει στις μόνιμες συλλογές του αντικείμενα που αφηγούνται ιστορίες ανθρώπων από την προϊστορική έως και την πρώιμη βυζαντινή περίοδο.... </em></h3>
+    <p>Για τη δημιουργία του αρχείου XML <a href="syllogi.xml">syllogi.xml</a> αξιοποιήθηκε η πηγή της σελίδας <a href="https://cycladic.gr//">cycladic.gr </a> </p>
+
+    <div id="controls">
+        <button id="1" class="button" onclick="loadDoc(this.id)">Παρουσίαση συλλογής</button>
+        <button id="2" class="button" onclick="loadDoc(this.id)">Ταξινόμηση κατά Κατηγορία</button>
+        <button id="3" class="button" onclick="loadDoc(this.id)">Ταξινόμηση κατά Υλικό</button>
+        <button id="4" class="button" onclick="loadDoc(this.id)">Εμφάνιση Νεότερου</button>
+        <button id="5" class="button" onclick="loadDoc(this.id)">Εμφάνιση Φθηνότερου</button>
+    </div>
+
+    <table id="displayTable"></table>
+
+    <script>
+        // Κεντρική συνάρτηση AJAX
+        function loadDoc(choice) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    switch(choice) {
+                        case "1": displayItems(this); break;
+                        case "2": sortByCategory(this); break;
+                        case "3": sortByMaterial(this); break;
+                        case "4": showLatest(this); break;
+                        case "5": showCheapest(this); break;
+                    }
+                }
+            };
+            xhttp.open("GET", "syllogi.xml", true);
+            xhttp.send();
+        }
+
+        // Συνάρτηση μετατροπής XML σε Δισδιάστατο Πίνακα (Η μέθοδος του Γιάννη)
+        function fillArrayFromXML(xml) {
+            const xmlDoc = xml.responseXML;
+            const erga = xmlDoc.getElementsByTagName("ΕΡΓΟ");
+            var dataArray = [];
+            for (var i = 0; i < erga.length; i++) {
+                dataArray[i] = [];
+                dataArray[i][0] = erga[i].getElementsByTagName("ΑΑ")[0].textContent;
+                dataArray[i][1] = erga[i].getElementsByTagName("ΕΙΔΟΣ")[0].textContent;
+                dataArray[i][2] = erga[i].getElementsByTagName("ΚΑΤΗΓΟΡΙΑ")[0].textContent;
+                dataArray[i][3] = erga[i].getElementsByTagName("ΥΛΙΚΟ")[0].textContent;
+                dataArray[i][4] = erga[i].getElementsByTagName("ΔΙΑΣΤΑΣΕΙΣ")[0].textContent;
+                dataArray[i][5] = erga[i].getElementsByTagName("ΕΤΟΣ")[0].textContent;
+                dataArray[i][6] = erga[i].getElementsByTagName("ΤΙΜΗ")[0].textContent;
+            }
+            return dataArray;
+        }
+
+        // Κεφαλίδα Πίνακα
+        const tableHeader = "<tr><th>ΑΑ</th><th>Είδος</th><th>Κατηγορία</th><th>Υλικό</th><th>Διαστάσεις</th><th>Έτος</th><th>Τιμή (€)</th></tr>";
+
+        function displayItems(xml) {
+            var A = fillArrayFromXML(xml);
+            renderTable(A);
+        }
+
+        function sortByCategory(xml) {
+            var A = fillArrayFromXML(xml);
+            // Ταξινόμηση βάσει της στήλης 2 (Κατηγορία)
+            A.sort(function(a, b) { return a[2].localeCompare(b[2], 'el'); });
+            renderTable(A);
+        }
+
+        function sortByMaterial(xml) {
+            var A = fillArrayFromXML(xml);
+            // Ταξινόμηση βάσει της στήλης 3 (Υλικό)
+            A.sort(function(a, b) { return a[3].localeCompare(b[3], 'el'); });
+            renderTable(A);
+        }
+
+        function showLatest(xml) {
+            var A = fillArrayFromXML(xml);
+            // Φθίνουσα ταξινόμηση βάσει έτους (στήλη 5)
+            A.sort(function(a, b) { return b[5] - a[5]; });
+            renderTable([A[0]]); // Εμφάνιση μόνο του πρώτου (νεότερου)
+        }
+
+        function showCheapest(xml) {
+            var A = fillArrayFromXML(xml);
+            // Αύξουσα ταξινόμηση βάσει τιμής (στήλη 6)
+            A.sort(function(a, b) { return a[6] - b[6]; });
+            renderTable([A[0]]); // Εμφάνιση μόνο του πρώτου (φθηνότερου)
+        }
+
+        // Συνάρτηση εκτύπωσης του πίνακα στο HTML
+        function renderTable(data) {
+            var tableHTML = tableHeader;
+            for (var i = 0; i < data.length; i++) {
+                tableHTML += "<tr>";
+                for (var j = 0; j < data[i].length; j++) {
+                    tableHTML += "<td>" + data[i][j] + "</td>";
+                }
+                tableHTML += "</tr>";
+            }
+            document.getElementById("displayTable").innerHTML = tableHTML;
+        }
+    </script>
+</body>
+</html>
